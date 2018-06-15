@@ -58,6 +58,10 @@ static ssize_t hello_stack_read(devminor_t minor, u64_t UNUSED(position), endpoi
 
     ptr = stack_top - size + 1;
 
+    if (size == 0) {
+        return size;
+    }
+
     if ((ret = sys_safecopyto(endpt, grant, 0, (vir_bytes) ptr, size)) != OK) {
         return ret;
     }
@@ -100,6 +104,10 @@ static ssize_t hello_stack_write(devminor_t minor, u64_t UNUSED(position), endpo
 
     /* set ptr to point at the first free "index" of stack */
     ptr = hello_stack + stack_count;
+
+    if (size == 0) {
+        return size;
+    }
     
     if ((ret = sys_safecopyfrom(endpt, grant, 0, (vir_bytes) ptr, size)) != OK) {
         return ret;
@@ -146,7 +154,7 @@ static int lu_state_restore() {
         return ENOMEM;//out of memory
     }
 
-    ds_retrieve_mem("hello_stack", hello_stack, &s_size);//TODO use s_size or stack_size? It seems like ds_retrieve_mem sets length
+    ds_retrieve_mem("hello_stack", hello_stack, &s_size);
     ds_delete_mem("hello_stack");
 
     stack_top = hello_stack + stack_count - 1;

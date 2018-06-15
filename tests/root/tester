@@ -1,0 +1,54 @@
+#!/bin/sh
+
+service down hello_stack
+
+set -e
+
+cd /usr/src/minix/drivers/examples/hello_stack
+make
+make install
+service up /service/hello_stack -dev /dev/hello_stack 
+
+cd ~ 
+make 
+
+echo 
+
+echo "Basic echo test:" 
+./test_io 
+echo "End of the test" 
+
+echo 
+
+echo "Update test:" 
+./write 123456asdfgh 
+service update /service/hello_stack -dev /dev/hello_stack 
+./read 12 123456asdfgh
+echo "End of the test" 
+
+echo 
+
+echo "Update test (with prior read):" 
+./read 30 bcabcabcabcabcabcabcabcabcabca 
+./write 123456asdfgh 
+service update /service/hello_stack -dev /dev/hello_stack 
+./read 12 123456asdfgh 
+echo "End of the test" 
+
+echo 
+
+echo "Lseek basic test:" 
+./test_io enable_lseek_inject 
+echo "End of the test" 
+
+echo 
+
+echo "Overread test:" 
+./read 22 abcabcabcabcabcabcabcabcabcabca 
+./read 10 abc 3
+echo "End of the test" 
+
+echo 
+
+echo "Testing finished" 
+
