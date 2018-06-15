@@ -52,13 +52,70 @@ static ssize_t hello_stack_read(devminor_t minor, u64_t UNUSED(position), endpoi
     char *ptr;
     int ret;
 
-    //TODO
+    if (size > stack_count) {
+        size = stack_count;
+    }
+
+    ptr = stack_top - size + 1;
+
+    if ((ret = sys_safecopyto(endpt, grant, 0, (vir_bytes) ptr, size)) != OK) {
+        return ret;
+    }
+
+    stack_count -= size;
+    if (stack_count <= stack_size / 4 && stack_size / 2 > 0) {
+        stack_size /= 2;
+
+        hello_stack = (char*) realloc(hello_stack, stack_size * sizeof(char));
+        if (hello_stack == NULL) {
+            return -1;
+        }
+    }
+
+    /* just make sure that stack_top doesn't point at something before hello_stack */
+    if (stack_count == 0) {
+        stack_top = hello_stack;
+    }
+    else {
+        stack_top = hello_stack + stack_count - 1;
+    }
+
+    return size;
 }
 
 static ssize_t hello_stack_write(devminor_t minor, u64_t UNUSED(position), endpoint_t endpt,
     cp_grant_id_t grant, size_t size, int flags, cdev_id_t id) {
 
-    // TODO
+    int ret;
+    char *ptr;
+
+    while (size > stack_size - stack_count) {
+        stack_size *= 2;
+
+        hello_stack = (char*) realloc(hello_stack, stack_size * sizeof(char));
+        if (hello_stack == NULL) {
+            return -1;
+        }
+    }
+
+    /* set ptr to point at the first free "index" of stack */
+    ptr = hello_stack + stack_count;
+    
+    if ((ret = sys_safecopyfrom(endpt, grant, 0, (vir_bytes) ptr, size)) != OK) {
+        return ret;
+    }
+
+    stack_count += size;
+    
+    /* just make sure that stack_top doesn't point at something before hello_stack */
+    if (stack_count == 0) {
+        stack_top = hello_stack;
+    }
+    else {
+        stack_top = hello_stack + stack_count - 1;
+    }
+
+    return size;
 }
 
 /* Save the state. */
@@ -67,7 +124,7 @@ static int sef_cb_lu_state_save(int UNUSED(state)) {
     ds_publish_u32("hello_stack_count", stack_count, DSF_OVERWRITE);
     ds_publish_mem("hello_stack", (void*) hello_stack, stack_size, DSF_OVERWRITE);
 
-    /* TODO free(hello_stack)? */
+    free(hello_stack);
 
     return OK;
 }
