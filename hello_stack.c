@@ -131,7 +131,7 @@ static int sef_cb_lu_state_save(int UNUSED(state)) {
 
 /* Restore the state. */
 static int lu_state_restore() {
-    int s_size, s_count;
+    size_t s_size, s_count;
 
     ds_retrieve_u32("hello_stack_size", &s_size);
     ds_delete_u32("hello_stack_size");
@@ -141,12 +141,12 @@ static int lu_state_restore() {
     ds_delete_u32("hello_stack_count");
     stack_count = s_count;
 
-    hello_stack = (char*) malloc(stack_size * siezeof(char));
+    hello_stack = (char*) malloc(stack_size * sizeof(char));
     if (hello_stack == NULL) {
         return ENOMEM;//out of memory
     }
 
-    ds_retrieve_mem("hello_stack", hello_stack, stack_size);
+    ds_retrieve_mem("hello_stack", hello_stack, &s_size);//TODO use s_size or stack_size? It seems like ds_retrieve_mem sets length
     ds_delete_mem("hello_stack");
 
     stack_top = hello_stack + stack_count - 1;
