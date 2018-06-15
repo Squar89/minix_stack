@@ -186,7 +186,6 @@ static void sef_local_startup() {
 
 static int init_stack() {
     hello_stack = (char*) malloc(DEVICE_SIZE * sizeof(char));
-    /* TODO where should I free this? */
     
     /* check if malloc was successful */
     if (hello_stack == NULL) {
